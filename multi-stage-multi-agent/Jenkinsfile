@@ -1,21 +1,44 @@
 pipeline {
-  agent none
-  stages {
-    stage('Back-end') {
-      agent {
-        docker { image 'maven:3.8.1-adoptopenjdk-11' }
-      }
-      steps {
-        sh 'mvn --version'
-      }
+    agent none // No global agent; specify agents per stage
+    stages {
+        stage('Build') {
+            agent {
+                docker {
+                    image 'maven:3.8.5-jdk-11' // Use a Maven Docker image for building
+                    args '-v /root/.m2:/root/.m2' // Optional: Mount Maven cache for efficiency
+                }
+            }
+            steps {
+                echo 'Building the project...'
+                sh 'mvn clean package'
+            }
+        }
+        stage('Test') {
+            agent {
+                docker {
+                    image 'openjdk:11' // Use an OpenJDK Docker image for testing
+                }
+            }
+            steps {
+                echo 'Running tests...'
+                sh 'java -jar target/my-app.jar test'
+            }
+        }
+        stage('Deploy') {
+            agent {
+                docker {
+                    image 'alpine:latest' // Use a lightweight Alpine Docker image for deployment
+                }
+            }
+            steps {
+                echo 'Deploying the application...'
+                sh 'echo "Deploying application to production!"'
+            }
+        }
     }
-    stage('Front-end') {
-      agent {
-        docker { image 'node:16-alpine' }
-      }
-      steps {
-        sh 'node --version'
-      }
+    post {
+        always {
+            echo 'Cleaning up...'
+        }
     }
-  }
 }
